@@ -1,18 +1,42 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:my_editor_app/src/features/authentication/presentation/provider/auth_provider.dart';
 import 'package:my_editor_app/src/features/authentication/presentation/screen/confirm_otp_screen.dart';
 import 'package:my_editor_app/src/features/authentication/presentation/screen/signin_screen.dart';
 import 'package:my_editor_app/src/features/authentication/presentation/screen/signup_screen.dart';
+import 'package:my_editor_app/src/features/home/presentation/screen/home_scren.dart';
+import 'package:provider/provider.dart';
 
 class RouterHelper {
   static final GoRouter router = GoRouter(
+    debugLogDiagnostics: true,
+   
     routes: [
       GoRoute(
         path: '/',
         pageBuilder: (context, state) {
           return CustomTransitionPage(
             key: state.pageKey,
-            child: SigninScreen(),
+            child:  const HomeScreen(),
+            
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              // Change the opacity of the screen using a Curve based on the the animation's
+              // value
+              return FadeTransition(
+                opacity: CurveTween(curve: Curves.easeInOutCirc).animate(animation),
+                child: child,
+              );
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: '/signin',
+        pageBuilder: (context, state) {
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child:  const SigninScreen(),
+            
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               // Change the opacity of the screen using a Curve based on the the animation's
               // value
@@ -41,11 +65,14 @@ class RouterHelper {
             );
           }),
       GoRoute(
-          path: '/otp',
+          path: '/otp/:email',
+         
           pageBuilder: (context, state) {
             return CustomTransitionPage(
               key: state.pageKey,
-              child: ConfirmOtpScreen(),
+              child: ConfirmOtpScreen(
+                email: state.pathParameters['email']!,
+              ),
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
                 // Change the opacity of the screen using a Curve based on the the animation's
                 // value

@@ -1,12 +1,22 @@
 import 'package:fluent_ui/fluent_ui.dart' hide Card;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' show Card;
-import 'package:my_editor_app/src/features/authentication/data/datasource/auth_datasource.dart';
+import 'package:go_router/go_router.dart';
+import 'package:my_editor_app/src/features/authentication/presentation/provider/auth_provider.dart';
 import 'package:pinput/pinput.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class ConfirmOtpScreen extends StatelessWidget {
-  const ConfirmOtpScreen({super.key});
+class ConfirmOtpScreen extends StatefulWidget {
+  final String email;
+  ConfirmOtpScreen({super.key, required this.email});
+
+  @override
+  _ConfirmOtpScreenState createState() => _ConfirmOtpScreenState();
+}
+
+class _ConfirmOtpScreenState extends State<ConfirmOtpScreen> {
+  final TextEditingController otpController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -17,32 +27,29 @@ class ConfirmOtpScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                'Enter the OTP sent to your email',
-                style: TextStyle(fontSize: 20),
+              RichText(
+                text: TextSpan(
+                  text: 'Enter the OTP sent to ',
+                  children: [
+                    TextSpan(text: widget.email, style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               Card(
                 elevation: 0,
                 color: Colors.transparent,
                 child: FilledRoundedPinPut(
-                  controller: TextEditingController(),
+                  controller: otpController,
                   onChanged: (value) {
                     print(value);
                   },
                   onCompleted: (value) async {
+                    // Ajoutez votre logique ici
                     print(value);
-                    final res = await AuthenticationDataSource()
-                        .confirmEmailWithOTP('bryce.kaddouri.dublin@gmail.com', value, OtpType.email);
-
-                    res.fold(
-                      (l) {
-                        print(l);
-                      },
-                      (r) {
-                        print(r);
-                      },
-                    );
+                    setState(() {
+                      otpController.text = value;
+                    });
                   },
                 ),
               ),
@@ -64,7 +71,17 @@ class ConfirmOtpScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               FilledButton(
-                onPressed: () {},
+                onPressed: otpController.text.length != 6 ? null : () async {
+                  print(otpController.text);
+                  final res = await context.read<AuthProvider>().confirmEmailWithOtp(
+                    widget.email,
+                    otpController.text,
+                    OtpType.email,
+                  );
+                  if (res) {
+                    context.pushReplacement('/');
+                  }
+                },
                 child: const Text('Verify OTP'),
               ),
             ],

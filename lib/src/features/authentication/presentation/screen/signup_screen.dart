@@ -3,6 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' show Scaffold;
 import 'package:go_router/go_router.dart';
 import 'package:my_editor_app/src/features/authentication/data/datasource/auth_datasource.dart';
+import 'package:my_editor_app/src/features/authentication/presentation/provider/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -121,12 +123,13 @@ class _SignupScreenState extends State<SignupScreen> {
                           onPressed: () async {
                             if (formKey.currentState!.validate()) {
                               // sign up
-                              final res = await AuthenticationDataSource().signUpWithEmailAndPassword(
+                              final res = await context.read<AuthProvider>().signUpWithEmailAndPassword(
                                 emailController.text,
                                 passwordController.text,
                               );
-
-                              res.fold((l) => print('fail : ${l.errorMessage}'), (r) => print(r));
+                              if (res) {
+                                context.push('/otp/${Uri.encodeComponent(emailController.text)}');
+                              }
                             }
                           },
                         ),

@@ -22,9 +22,14 @@ class AuthenticationDataSource {
   // method to sign in with email and password
   Future<Either<Failure, bool>> signInWithEmailAndPassword(String email, String password) async {
     try {
-      final response = await _client.auth.signInWithOtp(email: email, shouldCreateUser: false);
+      final response = await _client.auth.signInWithPassword(email: email, password: password);
       return Right(true);
-    } on PostgrestException catch (e) {
+    }on AuthException catch (e) {
+      print('error auth  : $e');
+      return Left(ServerFailure(errorMessage: e.message, errorCode: ""));
+    }
+     on PostgrestException catch (e) {
+      print('error : $e');  
       print(e.message);
       return Left(ServerFailure(errorMessage: e.message, errorCode: e.code));
     } catch (e) {
@@ -43,4 +48,36 @@ class AuthenticationDataSource {
       return Left(ServerFailure(errorMessage: e.toString(), errorCode: null));
     }
   }
+
+  // method to sign out
+  Future<Either<Failure, bool>> signOut() async {
+    try {
+      await _client.auth.signOut();
+      return Right(true);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(errorMessage: e.message, errorCode: e.code));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString(), errorCode: null));
+    }
+  }
+
+  // method to get user
+  Future<Either<Failure, User>> getUser() async {
+    try {
+      final response = await _client.auth.getUser();
+      return Right(response.user!);
+    } on PostgrestException catch (e) {
+      return Left(ServerFailure(errorMessage: e.message, errorCode: e.code));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString(), errorCode: null));
+    }
+  }
+
+  // method to listen on auth state change
+  Stream<AuthState> listenOnAuthStateChange() {
+    return _client.auth.onAuthStateChange;
+  }
+
+
+
 }

@@ -3,6 +3,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide FilledButton, Colors;
 import 'package:go_router/go_router.dart';
 import 'package:my_editor_app/src/features/authentication/data/datasource/auth_datasource.dart';
+import 'package:my_editor_app/src/features/authentication/presentation/provider/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -110,20 +112,15 @@ class _SigninScreenState extends State<SigninScreen> {
                         onPressed: () async {
                           if (formKey.currentState!.validate()) {
                             // sign in
-                            final res = await AuthenticationDataSource().signInWithEmailAndPassword(
+                            final res = await context.read<AuthProvider>().signInWithEmailAndPassword(
                               emailController.text,
                               passwordController.text,
                             );
+                            if (res) {
 
-                            res.fold(
-                              (l) {
-                                print('error: ${l.errorMessage}');
-                              },
-                              (r) {
-                                print('success: $r');
-                                context.push('/otp');
-                              },
-                            );
+                              context.push('/');
+                            }
+                          
                           }
                         },
                       ),
