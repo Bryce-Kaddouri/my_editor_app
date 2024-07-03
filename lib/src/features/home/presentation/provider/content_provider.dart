@@ -28,13 +28,27 @@ class ContentProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  List<ContentModel> _contentList = [];
-  List<ContentModel> get contentList => _contentList;
-  void setContentList(List<ContentModel> contentList) {
-    _contentList = contentList;
+  List<ContentModel> _allContentList = [];
+  List<ContentModel> get allContentList => _allContentList;
+  void setAllContentList(List<ContentModel> allContentList) {
+    _allContentList = allContentList;
     notifyListeners();
   }
 
+  List<ContentModel> _currentContentList = [];
+  List<ContentModel> get currentContentList => _currentContentList;
+  void setCurrentContentList(List<ContentModel> currentContentList) {
+    _currentContentList = currentContentList;
+    notifyListeners();
+  }
+
+  void addChildrenForParentId(int parentId, ) {
+    List<ContentModel> children = _allContentList.where((e) => e.parentId == parentId).toList();
+    List<int> pathsId = [parentId];
+    
+    _currentContentList.addAll(children);
+    notifyListeners();
+  }
   ContentModel? _selectedContent;
   ContentModel? get selectedContent => _selectedContent;
   void setSelectedContent(ContentModel? content) {
@@ -50,7 +64,7 @@ class ContentProvider with ChangeNotifier {
   }
 
   Future<void> createFolder(
-      {required String name, required int? childId}) async {
+      {required String name, required int? parentId}) async {
     ContentModel content = ContentModel(
       id: -1,
       name: name,
@@ -58,7 +72,7 @@ class ContentProvider with ChangeNotifier {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       userId: "",
-      childId: childId,
+      parentId: parentId,
       content: null,
     );
     setIsLoading(true);
@@ -69,7 +83,7 @@ class ContentProvider with ChangeNotifier {
         print(failure.errorMessage);
       },
       (content) {
-        _contentList.add(content);
+        _allContentList.add(content);
         notifyListeners();
       },
     );
@@ -78,7 +92,7 @@ class ContentProvider with ChangeNotifier {
 
   Future<int?> createPage(
       {required String name,
-      required int? childId,
+      required int? parentId,
       required Map<String, dynamic>? content}) async {
     ContentModel contentModel = ContentModel(
       id: -1,
@@ -87,7 +101,7 @@ class ContentProvider with ChangeNotifier {
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       userId: "",
-      childId: childId,
+      parentId: parentId,
       content: content,
     );
     setIsLoading(true);
@@ -100,7 +114,7 @@ class ContentProvider with ChangeNotifier {
       },
       (content) {
         print(content.toJson());
-        _contentList.add(content);
+        _allContentList.add(content);
         notifyListeners();
         id = content.id;
       },
@@ -132,10 +146,10 @@ class ContentProvider with ChangeNotifier {
         print(failure.errorMessage);
       },
       (updatedContent) {
-        final index = _contentList.indexWhere((c) => c.id == updatedContent.id);
+        final index = _allContentList.indexWhere((c) => c.id == updatedContent.id);
         if (index != -1) {
           print("update");
-          _contentList[index] = updatedContent;
+          _allContentList[index] = updatedContent;
           notifyListeners();
         }
       },
@@ -151,7 +165,7 @@ class ContentProvider with ChangeNotifier {
         // Handle failure
       },
       (success) {
-        _contentList.removeWhere((content) => content.id == id);
+        _allContentList.removeWhere((content) => content.id == id);
         notifyListeners();
       },
     );
@@ -167,7 +181,8 @@ class ContentProvider with ChangeNotifier {
         // Handle failure
       },
       (contentList) {
-        setContentList(contentList);
+        setAllContentList(contentList);
+        setCurrentContentList(contentList.where((e) => e.parentId == null).toList());
       },
     );
     setIsLoading(false);

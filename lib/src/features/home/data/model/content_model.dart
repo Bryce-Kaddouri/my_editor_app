@@ -6,7 +6,7 @@ class ContentModel {
   final DateTime updatedAt;
   final String name;
   final String userId;
-  final int? childId;
+  final int? parentId;
   Map<String, dynamic>? content;
   final bool isFolder;
   List<ContentModel>? children;
@@ -17,7 +17,7 @@ class ContentModel {
       required this.updatedAt,
       required this.name,
       required this.userId,
-      required this.childId,
+      required this.parentId,
       required this.content,
       required this.isFolder,
       this.children});
@@ -29,8 +29,8 @@ class ContentModel {
       updatedAt: DateTime.parse(json['updated_at']),
       name: json['name'],
       userId: json['user_id'],
-      childId: json['child_id'],
-      content: json['content'],
+      parentId: json['parent_id'],
+      content: null,
       isFolder: json['is_folder'],
       children: [],
     );
@@ -43,7 +43,7 @@ class ContentModel {
       'updated_at': updatedAt.toIso8601String(),
       'name': name,
       'user_id': userId,
-      'child_id': childId,
+      'parent_id': parentId,
       'content': content,
       'is_folder': isFolder,
     };
