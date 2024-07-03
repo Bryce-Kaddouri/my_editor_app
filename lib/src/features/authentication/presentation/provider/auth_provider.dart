@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -15,12 +14,16 @@ import 'package:my_editor_app/src/features/authentication/business/usecases/sign
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthProvider with ChangeNotifier {
-  final ConfirmEmailWithOtpUseCase _confirmEmailWithOtpUseCase = ConfirmEmailWithOtpUseCase();
+  final ConfirmEmailWithOtpUseCase _confirmEmailWithOtpUseCase =
+      ConfirmEmailWithOtpUseCase();
   final SignOutUseCase _signOutUseCase = SignOutUseCase();
   final GetUserUseCase _getUserUseCase = GetUserUseCase();
-  final SignUpWithEmailAndPasswordUseCase _signUpWithEmailAndPasswordUseCase = SignUpWithEmailAndPasswordUseCase();
-  final SignInWithEmailAndPasswordUseCase _signInWithEmailAndPasswordUseCase = SignInWithEmailAndPasswordUseCase();
-  final ListenOnAuthStateChangeUseCase _listenOnAuthStateChangeUseCase = ListenOnAuthStateChangeUseCase();
+  final SignUpWithEmailAndPasswordUseCase _signUpWithEmailAndPasswordUseCase =
+      SignUpWithEmailAndPasswordUseCase();
+  final SignInWithEmailAndPasswordUseCase _signInWithEmailAndPasswordUseCase =
+      SignInWithEmailAndPasswordUseCase();
+  final ListenOnAuthStateChangeUseCase _listenOnAuthStateChangeUseCase =
+      ListenOnAuthStateChangeUseCase();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -48,13 +51,23 @@ class AuthProvider with ChangeNotifier {
     print('auth provider');
     print('isLoggedIn : $isLoggedIn');
     print('user : $user');
-    
-    
-   listenOnAuthStateChange();
+
+    listenOnAuthStateChange();
   }
 
   void signOut() async {
     await _signOutUseCase.call(NoParams());
+  }
+
+  Future<bool> isAuthenticated() async {
+    bool isAuth = false;
+    final res = await _getUserUseCase.call(NoParams());
+    res.fold((failure) {
+      isAuth = false;
+    }, (user) {
+      isAuth = true;
+    });
+    return isAuth;
   }
 
   void getUser() async {
@@ -70,7 +83,8 @@ class AuthProvider with ChangeNotifier {
   Future<bool> signInWithEmailAndPassword(String email, String password) async {
     setIsLoading(true);
     bool isSuccess = false;
-    final res = await _signInWithEmailAndPasswordUseCase.call(SignInParam(email: email, password: password));
+    final res = await _signInWithEmailAndPasswordUseCase
+        .call(SignInParam(email: email, password: password));
     res.fold((failure) {
       print('fail : ${failure.errorMessage}');
       isSuccess = false;
@@ -84,7 +98,8 @@ class AuthProvider with ChangeNotifier {
   Future<bool> signUpWithEmailAndPassword(String email, String password) async {
     setIsLoading(true);
     bool isSuccess = false;
-    final res = await _signUpWithEmailAndPasswordUseCase.call(SignUpParam(email: email, password: password));
+    final res = await _signUpWithEmailAndPasswordUseCase
+        .call(SignUpParam(email: email, password: password));
     res.fold((failure) {
       print('fail : ${failure.errorMessage}');
       isSuccess = false;
@@ -95,14 +110,16 @@ class AuthProvider with ChangeNotifier {
     return isSuccess;
   }
 
-  Future<bool> confirmEmailWithOtp(String email, String otp, OtpType otpType) async {
+  Future<bool> confirmEmailWithOtp(
+      String email, String otp, OtpType otpType) async {
     print('confirmEmailWithOtp');
     print('email : $email');
     print('otp : $otp');
     print('otpType : $otpType');
     setIsLoading(true);
     bool isSuccess = false;
-    final res = await _confirmEmailWithOtpUseCase.call(ConfirmEmailParam(email: email, otp: otp, otpType: otpType));
+    final res = await _confirmEmailWithOtpUseCase
+        .call(ConfirmEmailParam(email: email, otp: otp, otpType: otpType));
     res.fold((failure) {
       print('fail : ${failure.errorMessage}');
       isSuccess = false;
@@ -113,9 +130,11 @@ class AuthProvider with ChangeNotifier {
     return isSuccess;
   }
 
-StreamSubscription<AuthState> listenOnAuthStateChange() {
-   return _listenOnAuthStateChangeUseCase.call(NoParams()).listen((AuthState event) {
-    print('event : ${event.session?.user}');
+  StreamSubscription<AuthState> listenOnAuthStateChange() {
+    return _listenOnAuthStateChangeUseCase
+        .call(NoParams())
+        .listen((AuthState event) {
+      print('event : ${event.session?.user}');
       AuthChangeEvent authChangeEvent = event.event;
       switch (authChangeEvent) {
         case AuthChangeEvent.initialSession:
@@ -126,7 +145,7 @@ StreamSubscription<AuthState> listenOnAuthStateChange() {
         case AuthChangeEvent.signedIn:
           setIsLoggedIn(true);
           setUser(event.session?.user);
-    
+
           break;
         case AuthChangeEvent.signedOut:
           setIsLoggedIn(false);
@@ -151,11 +170,5 @@ StreamSubscription<AuthState> listenOnAuthStateChange() {
           break;
       }
     });
-}
-
-
-
-
-  
-
+  }
 }

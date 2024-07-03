@@ -64,8 +64,12 @@ class AuthenticationDataSource {
   // method to get user
   Future<Either<Failure, User>> getUser() async {
     try {
-      final response = await _client.auth.getUser();
-      return Right(response.user!);
+      final response =  _client.auth.currentUser;
+      if(response != null) {
+        return Right(response);
+      } else {
+        return Left(ServerFailure(errorMessage: "User not found", errorCode: ""));
+      }
     } on PostgrestException catch (e) {
       return Left(ServerFailure(errorMessage: e.message, errorCode: e.code));
     } catch (e) {

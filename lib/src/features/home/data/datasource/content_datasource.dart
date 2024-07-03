@@ -9,7 +9,8 @@ class ContentDataSource {
   final _client = Supabase.instance.client;
 
   // Method to create content
-  Future<Either<Failure, ContentModel>> createContent(ContentModel content) async {
+  Future<Either<Failure, ContentModel>> createContent(
+      ContentModel content) async {
     try {
       Map<String, dynamic> data = content.toJson(isForAdd: true);
       data['user_id'] = _client.auth.currentUser!.id;
@@ -31,11 +32,8 @@ class ContentDataSource {
   // Method to read content by ID
   Future<Either<Failure, ContentModel>> getContentById(int id) async {
     try {
-      final response = await _client
-          .from('content')
-          .select()
-          .eq('id', id)
-          .single();
+      final response =
+          await _client.from('content').select().eq('id', id).single();
       return Right(ContentModel.fromJson(response));
     } on PostgrestException catch (e) {
       return Left(ServerFailure(errorMessage: e.message, errorCode: e.code));
@@ -45,7 +43,8 @@ class ContentDataSource {
   }
 
   // Method to update content
-  Future<Either<Failure, ContentModel>> updateContent(ContentModel content) async {
+  Future<Either<Failure, ContentModel>> updateContent(
+      ContentModel content) async {
     try {
       final response = await _client
           .from('content')
@@ -64,10 +63,7 @@ class ContentDataSource {
   // Method to delete content
   Future<Either<Failure, bool>> deleteContent(int id) async {
     try {
-      await _client
-          .from('content')
-          .delete()
-          .eq('id', id);
+      await _client.from('content').delete().eq('id', id);
       return Right(true);
     } on PostgrestException catch (e) {
       return Left(ServerFailure(errorMessage: e.message, errorCode: e.code));
@@ -79,13 +75,17 @@ class ContentDataSource {
   // Method to list all content
   Future<Either<Failure, List<ContentModel>>> listAllContent() async {
     try {
-      final response = await _client
-          .from('content')
-          .select();
-      final contentList = (response as List)
+      final response = await _client.from('content').select();
+      final allContentList = (response as List)
           .map((json) => ContentModel.fromJson(json))
           .toList();
-      return Right(contentList);
+      List<ContentModel> contentListWithoutChildren = [];
+      allContentList.forEach((element) {
+        element.children =
+            allContentList.where((e) => e.childId == element.id).toList();
+        contentListWithoutChildren.add(element);
+      });
+      return Right(contentListWithoutChildren);
     } on PostgrestException catch (e) {
       return Left(ServerFailure(errorMessage: e.message, errorCode: e.code));
     } catch (e) {

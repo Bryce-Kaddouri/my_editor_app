@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart' show Scaffold, AppBar, BottomNavigationBar, FloatingActionButton;
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart'
+    show Scaffold, AppBar, BottomNavigationBar, FloatingActionButton;
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:go_router/go_router.dart';
 import 'package:my_editor_app/src/features/authentication/presentation/provider/auth_provider.dart';
+import 'package:my_editor_app/src/features/home/data/model/content_model.dart';
 import 'package:my_editor_app/src/features/home/presentation/provider/content_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -11,7 +15,8 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -53,18 +58,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   final _items = <BreadcrumbItem<int>>[
-  BreadcrumbItem(label: Text('Home'), value: 0),
-  BreadcrumbItem(label: Text('Documents'), value: 1),
-  BreadcrumbItem(label: Text('Design'), value: 2),
-  BreadcrumbItem(label: Text('Northwind'), value: 3),
-  BreadcrumbItem(label: Text('Images'), value: 4),
-  BreadcrumbItem(label: Text('Folder1'), value: 5),
-  BreadcrumbItem(label: Text('Folder2'), value: 6),
-  BreadcrumbItem(label: Text('Folder3'), value: 7),
-  BreadcrumbItem(label: Text('Folder4'), value: 8),
-  BreadcrumbItem(label: Text('Folder5'), value: 9),
-  BreadcrumbItem(label: Text('Folder6'), value: 10),
-];
+    BreadcrumbItem(label: Text('Home'), value: 0),
+    BreadcrumbItem(label: Text('Documents'), value: 1),
+    BreadcrumbItem(label: Text('Design'), value: 2),
+    BreadcrumbItem(label: Text('Northwind'), value: 3),
+    BreadcrumbItem(label: Text('Images'), value: 4),
+    BreadcrumbItem(label: Text('Folder1'), value: 5),
+    BreadcrumbItem(label: Text('Folder2'), value: 6),
+    BreadcrumbItem(label: Text('Folder3'), value: 7),
+    BreadcrumbItem(label: Text('Folder4'), value: 8),
+    BreadcrumbItem(label: Text('Folder5'), value: 9),
+    BreadcrumbItem(label: Text('Folder6'), value: 10),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         title: const Text('Home'),
       ),
       body: Column(children: [
+        /*
         BreadcrumbBar<int>(
   items: _items,
   onItemPressed: (item) {
@@ -213,7 +219,73 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   onSecondaryTap: (item, details) async {
     debugPrint('onSecondaryTap $item at ${details.globalPosition}');
   },
-)
+)*/
+
+        context.watch<ContentProvider>().contentList.isNotEmpty
+            ? TreeView(
+                shrinkWrap: true,
+                items: <TreeViewItem>[
+                  ...context
+                      .watch<ContentProvider>()
+                      .contentList
+                      .where((element) => element.childId == null)
+                      .map(
+                        (e) => TreeViewItem(
+                          backgroundColor:
+                              context.watch<ContentProvider>().currentIndex ==
+                                      e.id
+                                  ? ButtonState.all(FluentTheme.of(context)
+                                      .micaBackgroundColor
+                                      .withOpacity(1))
+                                  : ButtonState.all(FluentTheme.of(context)
+                                      .micaBackgroundColor
+                                      .withOpacity(0.7)),
+                          selected:
+                              context.watch<ContentProvider>().currentIndex ==
+                                  e.id,
+                          children: !e.isFolder
+                              ? []
+                              : e.children != null
+                                  ? e.children!
+                                      .map((e) => TreeViewItem(
+                                          content: Text(e.name), value: e.id))
+                                      .toList()
+                                  : [],
+                          onInvoked: (item, reason) async {
+                            context
+                                .read<ContentProvider>()
+                                .setCurrentIndex(e.id!);
+                          },
+                          leading: Icon(e.isFolder
+                              ? FluentIcons.folder
+                              : FluentIcons.page),
+                          content: Row(
+                            children: [
+                              Expanded(child: Text(e.name)),
+                              if (context
+                                      .watch<ContentProvider>()
+                                      .currentIndex ==
+                                  e.id) ...[
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  onPressed: () {
+                                    if (e.isFolder) {
+                                      print("folder");
+                                    } else {
+                                      context.go('/page/${e.id}');
+                                    }
+                                  },
+                                  icon: Icon(FluentIcons.forward),
+                                ),
+                              ],
+                            ],
+                          ),
+                          value: e.id,
+                        ),
+                      ),
+                ],
+              )
+            : const Center(child: ProgressRing())
       ]),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -251,7 +323,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: const Text('Confirm'),
                             onPressed: _isPageNameValid
                                 ? () {
-                                    Navigator.pop(context, _pageNameController.text);
+                                    Navigator.pop(
+                                        context, _pageNameController.text);
                                     // Add page creation logic here
                                   }
                                 : null,
@@ -260,6 +333,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                   );
+                  if (result != null) {
+                    print(result);
+                    int? res = await context
+                        .read<ContentProvider>()
+                        .createPage(name: result, childId: null, content: null);
+                    if (res != null) {
+                      context.go('/page/$res');
+                    }
+                  }
                 },
                 child: Icon(FluentIcons.page),
               ),
@@ -297,7 +379,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: const Text('Confirm'),
                             onPressed: _isFolderNameValid
                                 ? () {
-                                    Navigator.pop(context, _folderNameController.text);
+                                    Navigator.pop(
+                                        context, _folderNameController.text);
                                     // Add folder creation logic here
                                   }
                                 : null,
@@ -309,8 +392,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
                   if (result != null) {
                     print(result);
-                     await context.read<ContentProvider>().createFolder(name: result, childId: null);
+                    ContentModel? current;
+                    if (context.read<ContentProvider>().currentIndex != -1 &&
+                        context
+                            .read<ContentProvider>()
+                            .contentList[
+                                context.read<ContentProvider>().currentIndex]
+                            .isFolder) {
+                      current = context.read<ContentProvider>().contentList[
+                          context.read<ContentProvider>().currentIndex];
+                    }
+                    int? childId;
+                    if (current != null) {
+                      childId = current.id;
+                    }
 
+                    print(childId);
+                    await context
+                        .read<ContentProvider>()
+                        .createFolder(name: result, childId: childId);
                   }
                 },
                 child: Icon(FluentIcons.folder),
@@ -329,7 +429,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         items: [
           BottomNavigationBarItem(icon: Icon(FluentIcons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(FluentIcons.group), label: 'Team'),
-          BottomNavigationBarItem(icon: Icon(FluentIcons.settings), label: 'Setting'),
+          BottomNavigationBarItem(
+              icon: Icon(FluentIcons.settings), label: 'Setting'),
         ],
       ),
     );

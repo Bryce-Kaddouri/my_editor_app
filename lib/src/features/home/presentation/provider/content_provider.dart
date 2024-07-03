@@ -16,6 +16,11 @@ class ContentProvider with ChangeNotifier {
   final DeleteContentUseCase _deleteContentUseCase = DeleteContentUseCase();
   final ListAllContentUseCase _listAllContentUseCase = ListAllContentUseCase();
 
+  ContentProvider() {
+    print("ContentProvider");
+    listAllContent();
+  }
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
   void setIsLoading(bool isLoading) {
@@ -37,7 +42,15 @@ class ContentProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createFolder({required String name, required int? childId}) async {
+  int _currentIndex = -1;
+  int get currentIndex => _currentIndex;
+  void setCurrentIndex(int index) {
+    _currentIndex = index;
+    notifyListeners();
+  }
+
+  Future<void> createFolder(
+      {required String name, required int? childId}) async {
     ContentModel content = ContentModel(
       id: -1,
       name: name,
@@ -63,7 +76,10 @@ class ContentProvider with ChangeNotifier {
     setIsLoading(false);
   }
 
-  Future<void> createPage({required String name, required int? childId, required Map<String, dynamic>? content}) async {
+  Future<int?> createPage(
+      {required String name,
+      required int? childId,
+      required Map<String, dynamic>? content}) async {
     ContentModel contentModel = ContentModel(
       id: -1,
       name: name,
@@ -76,16 +92,21 @@ class ContentProvider with ChangeNotifier {
     );
     setIsLoading(true);
     final result = await _createContentUseCase.call(contentModel);
+    int? id;
     result.fold(
       (failure) {
         // Handle failure
+        print(failure.errorMessage);
       },
       (content) {
+        print(content.toJson());
         _contentList.add(content);
         notifyListeners();
+        id = content.id;
       },
     );
     setIsLoading(false);
+    return id;
   }
 
   Future<void> getContentById(int id) async {
@@ -108,10 +129,12 @@ class ContentProvider with ChangeNotifier {
     result.fold(
       (failure) {
         // Handle failure
+        print(failure.errorMessage);
       },
       (updatedContent) {
         final index = _contentList.indexWhere((c) => c.id == updatedContent.id);
         if (index != -1) {
+          print("update");
           _contentList[index] = updatedContent;
           notifyListeners();
         }
@@ -140,6 +163,7 @@ class ContentProvider with ChangeNotifier {
     final result = await _listAllContentUseCase.call(NoParams());
     result.fold(
       (failure) {
+        print(failure.errorMessage);
         // Handle failure
       },
       (contentList) {
