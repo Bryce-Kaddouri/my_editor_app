@@ -76,6 +76,8 @@ class ContentDataSource {
   Future<Either<Failure, List<ContentModel>>> listAllContent() async {
     try {
       final response = await _client.from('content').select();
+      print('response');
+      print(response);
       final allContentList = (response as List)
           .map((json) => ContentModel.fromJson(json))
           .toList();
