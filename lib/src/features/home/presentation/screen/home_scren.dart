@@ -25,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen>
   final TextEditingController _pageNameController = TextEditingController();
   bool _isFolderNameValid = false;
   bool _isPageNameValid = false;
+  List<TreeViewItem> _treeViewItems = [];
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen>
       parent: _controller,
       curve: Curves.easeInOut,
     );
-    
+    _buildTreeViewItems();
   }
 
   @override
@@ -59,7 +60,18 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  
+  void _buildTreeViewItems() {
+    setState(() {
+      _treeViewItems = context
+          .read<ContentProvider>()
+          .allContentList
+          .where((element) => element.level == 1)
+          .map((e) => TreeViewItem(
+                content: Text(e.name),
+              ))
+          .toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,39 +79,42 @@ class _HomeScreenState extends State<HomeScreen>
       appBar: AppBar(
         title: const Text('Home'),
       ),
-      body: Column(children: [    
-       Expanded(child: TreeView(
-          
+      body: Column(children: [
+        Expanded(
+            child: TreeView(
+          narrowSpacing: true,
           shrinkWrap: true,
-          items: <TreeViewItem>[
-            
-            ...context.watch<ContentProvider>().currentContentList.map((e) => TreeViewItem(
-              onExpandToggle: (item, getsExpanded) async {
-                // If it's already populated, return.
-                List<ContentModel> childrenFromAll = context.read<ContentProvider>().allContentList.where((element) => element.parentId == e.id).toList();
-                List<ContentModel> childrenFromCurrent = context.read<ContentProvider>().currentContentList.where((element) => element.parentId == e.id).toList();
-                // sort childrenFromAll by id
-                childrenFromAll.sort((a, b) => a.id!.compareTo(b.id!));
-                // sort childrenFromCurrent by id
-                childrenFromCurrent.sort((a, b) => a.id!.compareTo(b.id!));
-
-                
-
-
-                print(childrenFromAll);
-                print(childrenFromCurrent);
-                if(childrenFromAll.isNotEmpty && childrenFromCurrent.isEmpty){
-                  context.read<ContentProvider>().addChildrenForParentId(e.id!);
-                }else{
-                  return;
-                }
-
-              },
-              lazy: true,
-              content: Text(e.name),
-              value: e.id,
-            )),
-          ],
+          items: context
+              .watch<ContentProvider>()
+              .currentContentList
+              .where((element) => element.level == 1)
+              .map((e) => TreeViewItem(
+                    lazy: true,
+                    content: Text(e.name),
+                    onExpandToggle: (item, getsExpanded) async {
+                      print("onExpandToggle");
+                      print(item);
+                      print(getsExpanded);
+                      // If it's already populated, return.
+                      if (item.children.isNotEmpty) return;
+                      List<ContentModel> children = context
+                          .read<ContentProvider>()
+                          .allContentList
+                          .where((element) => element.parentId == e.id)
+                          .toList();
+                      print(children);
+                      if (children.isNotEmpty) {
+                        List<ContentModel> currentContentList = context
+                            .read<ContentProvider>()
+                            .currentContentList;
+                        currentContentList.addAll(children);
+                        context
+                            .read<ContentProvider>()
+                            .setCurrentContentList(currentContentList);
+                      }
+                    },
+                  ))
+              .toList(),
           /*[
             TreeViewItem(
               content: const Text('Item with lazy loading'),
@@ -229,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen>
           },
         )
 
-        /*context.watch<ContentProvider>().contentList.isNotEmpty
+            /*context.watch<ContentProvider>().contentList.isNotEmpty
             ? TreeView(
                 shrinkWrap: true,
                 items: <TreeViewItem>[
@@ -318,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ],
               )
             : const Center(child: ProgressRing())*/
-       ),
+            ),
       ]),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -368,9 +383,8 @@ class _HomeScreenState extends State<HomeScreen>
                   );
                   if (result != null) {
                     print(result);
-                    int? res = await context
-                        .read<ContentProvider>()
-                        .createPage(name: result, parentId: null, content: null);
+                    int? res = await context.read<ContentProvider>().createPage(
+                        name: result, parentId: null, content: null);
                     if (res != null) {
                       context.go('/page/$res');
                     }
@@ -432,8 +446,9 @@ class _HomeScreenState extends State<HomeScreen>
                             .currentContentList[
                                 context.read<ContentProvider>().currentIndex]
                             .isFolder) {
-                      current = context.read<ContentProvider>().currentContentList[
-                          context.read<ContentProvider>().currentIndex];
+                      current =
+                          context.read<ContentProvider>().currentContentList[
+                              context.read<ContentProvider>().currentIndex];
                     }
                     int? parentId;
                     if (current != null) {

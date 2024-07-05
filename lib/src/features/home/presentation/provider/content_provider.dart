@@ -74,6 +74,7 @@ class ContentProvider with ChangeNotifier {
       userId: "",
       parentId: parentId,
       content: null,
+      level: 0,
     );
     setIsLoading(true);
     final result = await _createContentUseCase.call(content);
@@ -103,6 +104,7 @@ class ContentProvider with ChangeNotifier {
       userId: "",
       parentId: parentId,
       content: content,
+      level: 0,
     );
     setIsLoading(true);
     final result = await _createContentUseCase.call(contentModel);

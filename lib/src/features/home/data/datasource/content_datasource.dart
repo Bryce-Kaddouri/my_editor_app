@@ -92,6 +92,7 @@ class ContentDataSource {
             updatedAt: DateTime.parse(element['updated_at']),
             isFolder: element['is_folder'],
             children: [],
+            level: element['level'],
           ));
             }
 
@@ -126,6 +127,7 @@ class ContentDataSource {
             updatedAt: DateTime.parse(element['updated_at']),
             isFolder: element['is_folder'],
             children: [],
+            level: element['level'],
           );
           if(content.parentId == null){
             sortedContentList.add(content);
