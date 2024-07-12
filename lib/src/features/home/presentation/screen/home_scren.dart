@@ -38,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen>
       parent: _controller,
       curve: Curves.easeInOut,
     );
-    _buildTreeViewItems();
   }
 
   @override
@@ -60,17 +59,22 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  void _buildTreeViewItems() {
-    setState(() {
-      _treeViewItems = context
-          .read<ContentProvider>()
-          .allContentList
-          .where((element) => element.level == 1)
-          .map((e) => TreeViewItem(
-                content: Text(e.name),
-              ))
-          .toList();
-    });
+  //function to build tree view items by using recursive
+  List<TreeViewItem> _buildTreeViewItems(List<ContentModel> contentList) {
+    return _buildTreeViewItemsRecursive(contentList);
+  }
+
+  List<TreeViewItem> _buildTreeViewItemsRecursive(
+      List<ContentModel> contentList) {
+    print('_buildTreeViewItemsRecursive');
+    return contentList.map((content) {
+      return TreeViewItem(
+        lazy: true,
+        content: Text(content.name),
+        value: content,
+        children: _buildTreeViewItemsRecursive(content.children ?? []),
+      );
+    }).toList();
   }
 
   @override
@@ -84,256 +88,76 @@ class _HomeScreenState extends State<HomeScreen>
             child: TreeView(
           narrowSpacing: true,
           shrinkWrap: true,
-          items: context
-              .watch<ContentProvider>()
-              .currentContentList
-              .where((element) => element.level == 1)
-              .map((e) => TreeViewItem(
-                    lazy: true,
-                    content: Text(e.name),
-                    onExpandToggle: (item, getsExpanded) async {
-                      print("onExpandToggle");
-                      print(item);
-                      print(getsExpanded);
-                      // If it's already populated, return.
-                      if (item.children.isNotEmpty) return;
-                      List<ContentModel> children = context
-                          .read<ContentProvider>()
-                          .allContentList
-                          .where((element) => element.parentId == e.id)
-                          .toList();
-                      print(children);
-                      if (children.isNotEmpty) {
-                        List<ContentModel> currentContentList = context
-                            .read<ContentProvider>()
-                            .currentContentList;
-                        currentContentList.addAll(children);
-                        context
-                            .read<ContentProvider>()
-                            .setCurrentContentList(currentContentList);
-                      }
-                    },
-                  ))
-              .toList(),
-          /*[
-            TreeViewItem(
-              content: const Text('Item with lazy loading'),
-              value: 'lazy_load',
-              // This means the item will be expandable, although there are no
-              // children yet.
-              lazy: true,
-              // Ensure the list is modifiable.
-              children: [],
-              onExpandToggle: (item, getsExpanded) async {
-                // If it's already populated, return.
-                if (item.children.isNotEmpty) return;
+          items: _buildTreeViewItems(
+              context.watch<ContentProvider>().currentContentList),
+          onItemInvoked: (item, reason) async {
+            ContentModel contentModel = item.value;
+            int level = contentModel.level;
+            int id = contentModel.id!;
+            print(contentModel);
+            print(level);
+            print(id);
+            String path = item.value.id.toString();
 
-                // Do your fetching...
-                await Future.delayed(const Duration(seconds: 2));
+            if (item.parent != null) {
+              var parent = item.parent;
+              while (parent != null) {
+                print('item.parent ${parent.value}');
+                path = parent.value.id.toString() + "-" + path;
+                parent = parent.parent;
+              }
+            } else {
+              path = item.value.id.toString();
+            }
 
-                // ...and add the fetched nodes.
-                item.children.addAll([
-                  TreeViewItem(
-                    content: const Text('Lazy item 1'),
-                    value: 'lazy_1',
-                  ),
-                  TreeViewItem(
-                    content: const Text('Lazy item 2'),
-                    value: 'lazy_2',
-                  ),
-                  TreeViewItem(
-                    content: const Text('Lazy item 3'),
-                    value: 'lazy_3',
-                  ),
-                  TreeViewItem(
-                    content: const Text(
-                      'Lazy item 4 (this text should not overflow)',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    value: 'lazy_4',
-                  ),
-                ]);
-              },
-            ),
-            TreeViewItem(
-              content: const Text('Item with lazy loading'),
-              value: 'lazy_load',
-              // This means the item will be expandable, although there are no
-              // children yet.
-              lazy: true,
-              // Ensure the list is modifiable.
-              children: [],
-              onExpandToggle: (item, getsExpanded) async {
-                // If it's already populated, return.
-                if (item.children.isNotEmpty) return;
+            // reverse the path
+            List<String> pathList = path.split('-');
+            pathList = pathList.reversed.toList();
+            path = pathList.join('-');
 
-                // Do your fetching...
-                await Future.delayed(const Duration(seconds: 2));
+            print('path $path');
+            if (item.children.isNotEmpty && item.value.id != 8) return;
 
-                // ...and add the fetched nodes.
-                item.children.addAll([
-                  TreeViewItem(
-                    content: const Text('Lazy item 1'),
-                    value: 'lazy_1',
-                  ),
-                  TreeViewItem(
-                    content: const Text('Lazy item 2'),
-                    value: 'lazy_2',
-                  ),
-                  TreeViewItem(
-                    content: const Text('Lazy item 3'),
-                    value: 'lazy_3',
-                  ),
-                  TreeViewItem(
-                    content: const Text(
-                      'Lazy item 4 (this text should not overflow)',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    value: 'lazy_4',
-                  ),
-                ]);
-              },
-            ),
-            TreeViewItem(
-              content: const Text('Item with lazy loading'),
-              value: 'lazy_load',
-              // This means the item will be expandable, although there are no
-              // children yet.
-              lazy: true,
-              // Ensure the list is modifiable.
-              children: [],
-              onExpandToggle: (item, getsExpanded) async {
-                // If it's already populated, return.
-                if (item.children.isNotEmpty) return;
+            List<ContentModel>? children = await context
+                .read<ContentProvider>()
+                .listAllContentForSpecificFolder(level + 1, id);
 
-                // Do your fetching...
-                await Future.delayed(const Duration(seconds: 2));
+            print(children);
 
-                // ...and add the fetched nodes.
-                item.children.addAll([
-                  TreeViewItem(
-                    content: const Text('Lazy item 1'),
-                    value: 'lazy_1',
-                  ),
-                  TreeViewItem(
-                    content: const Text('Lazy item 2'),
-                    value: 'lazy_2',
-                  ),
-                  TreeViewItem(
-                    content: const Text('Lazy item 3'),
-                    value: 'lazy_3',
-                  ),
-                  TreeViewItem(
-                    content: const Text(
-                      'Lazy item 4 (this text should not overflow)',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    value: 'lazy_4',
-                  ),
-                ]);
-              },
-            ),
-          ]*/
-          onItemInvoked: (item, reason) async =>
-              debugPrint('onItemInvoked: $item'),
+            if (children != null) {
+              context.read<ContentProvider>().addChildrenForParentId(children);
+            }
+
+            debugPrint('onItemInvoked: $item');
+            print('reason: $reason');
+            print(item.value);
+
+            /*if (item.children.isNotEmpty) return;
+            ContentModel contentModel = item.value;
+            int level = contentModel.level;
+            int id = contentModel.id!;
+            print(contentModel);
+            print(level);
+            print(id);
+            List<ContentModel>? children = await context
+                .read<ContentProvider>()
+                .listAllContentForSpecificFolder(level + 1, id);
+
+            print(children);
+
+            if (children != null) {
+              context.read<ContentProvider>().addChildrenForParentId(children);
+            }*/
+
+            // If it's already populated, return.
+          },
           onSelectionChanged: (selectedItems) async => debugPrint(
             'onSelectionChanged: ${selectedItems.map((i) => i.value)}',
           ),
           onSecondaryTap: (item, details) async {
             debugPrint('onSecondaryTap $item at ${details.globalPosition}');
           },
-        )
-
-            /*context.watch<ContentProvider>().contentList.isNotEmpty
-            ? TreeView(
-                shrinkWrap: true,
-                items: <TreeViewItem>[
-                  ...context
-                      .watch<ContentProvider>()
-                      .contentList
-                      .where((element) => element.childId == null)
-                      .map(
-                        (e) => TreeViewItem(
-                          lazy: true,
-                          onExpandToggle: (item, getsExpanded) async {
-                            // If it's already populated, return.
-                            if (item.children.isNotEmpty) return;
-
-                            // Do your fetching...
-                            await Future.delayed(const Duration(seconds: 2));
-
-                            // ...and add the fetched nodes.
-                            item.children.addAll([
-                              TreeViewItem(
-                                content: const Text('Lazy item 1'),
-                                value: 'lazy_1',
-                              ),
-                              TreeViewItem(
-                                content: const Text('Lazy item 2'),
-                                value: 'lazy_2',
-                              ),
-                              TreeViewItem(
-                                content: const Text('Lazy item 3'),
-                                value: 'lazy_3',
-                              ),
-                              TreeViewItem(
-                                content: const Text(
-                                  'Lazy item 4 (this text should not overflow)',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                value: 'lazy_4',
-                              ),
-                            ]);
-                          },
-                          backgroundColor:
-                              context.watch<ContentProvider>().currentIndex ==
-                                      e.id
-                                  ? ButtonState.all(FluentTheme.of(context)
-                                      .micaBackgroundColor
-                                      .withOpacity(1))
-                                  : ButtonState.all(FluentTheme.of(context)
-                                      .micaBackgroundColor
-                                      .withOpacity(0.7)),
-                          selected:
-                              context.watch<ContentProvider>().currentIndex ==
-                                  e.id,
-                          children: [],
-                          onInvoked: (item, reason) async {
-                            context
-                                .read<ContentProvider>()
-                                .setCurrentIndex(e.id!);
-                          },
-                          leading: Icon(e.isFolder
-                              ? FluentIcons.folder
-                              : FluentIcons.page),
-                          content: Row(
-                            children: [
-                              Expanded(child: Text(e.name)),
-                              if (context
-                                      .watch<ContentProvider>()
-                                      .currentIndex ==
-                                  e.id) ...[
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () {
-                                    if (e.isFolder) {
-                                      print("folder");
-                                    } else {
-                                      context.go('/page/${e.id}');
-                                    }
-                                  },
-                                  icon: Icon(FluentIcons.forward),
-                                ),
-                              ],
-                            ],
-                          ),
-                          value: e.id,
-                        ),
-                      ),
-                ],
-              )
-            : const Center(child: ProgressRing())*/
-            ),
+        )),
       ]),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,

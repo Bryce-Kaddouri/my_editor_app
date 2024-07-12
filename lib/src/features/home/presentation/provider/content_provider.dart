@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:my_editor_app/core/data/usecase/usecase.dart';
+import 'package:my_editor_app/src/features/home/business/param/list_contant_param.dart';
 import 'package:my_editor_app/src/features/home/business/usecase/create_content_usecase.dart';
 import 'package:my_editor_app/src/features/home/business/usecase/delete_content_usecase.dart';
 import 'package:my_editor_app/src/features/home/business/usecase/get_content_by_id_usecase.dart';
@@ -18,7 +19,7 @@ class ContentProvider with ChangeNotifier {
 
   ContentProvider() {
     print("ContentProvider");
-    listAllContent();
+    listRootContent();
   }
 
   bool _isLoading = false;
@@ -42,13 +43,37 @@ class ContentProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void addChildrenForParentId(int parentId, ) {
-    List<ContentModel> children = _allContentList.where((e) => e.parentId == parentId).toList();
-    List<int> pathsId = [parentId];
-    
-    _currentContentList.addAll(children);
+  String _path = "";
+  String get path => _path;
+  void setPath(String path) {
+    _path = path;
     notifyListeners();
   }
+
+  void addChildrenForParentId(List<ContentModel> children, String path) {
+    print('method : addChildrenForParentId');
+
+    List<int> pathsId = [];
+    List<String> pathList = path.split('-');
+    pathList.forEach((element) {
+      pathsId.add(int.parse(element));
+    });
+    ContentModel? current;
+    for (int i = 0; i < pathsId.length; i++) {
+      ContentModel content =
+          _currentContentList.firstWhere((element) => element.id == pathsId[i]);
+      if (current == null) {
+        current = content;
+      } else {
+        current =
+            current.children!.firstWhere((element) => element.id == pathsId[i]);
+        _currentContentList = current.children!;
+      }
+    }
+
+    notifyListeners();
+  }
+
   ContentModel? _selectedContent;
   ContentModel? get selectedContent => _selectedContent;
   void setSelectedContent(ContentModel? content) {
@@ -148,7 +173,8 @@ class ContentProvider with ChangeNotifier {
         print(failure.errorMessage);
       },
       (updatedContent) {
-        final index = _allContentList.indexWhere((c) => c.id == updatedContent.id);
+        final index =
+            _allContentList.indexWhere((c) => c.id == updatedContent.id);
         if (index != -1) {
           print("update");
           _allContentList[index] = updatedContent;
@@ -174,9 +200,34 @@ class ContentProvider with ChangeNotifier {
     setIsLoading(false);
   }
 
-  Future<void> listAllContent() async {
+  Future<List<ContentModel>?> listAllContentForSpecificFolder(
+      int level, int parentId) async {
     setIsLoading(true);
-    final result = await _listAllContentUseCase.call(NoParams());
+    final result = await _listAllContentUseCase.call(ListContentParam(
+      level: level,
+      parentId: parentId,
+    ));
+    List<ContentModel>? contentListReturn;
+    result.fold(
+      (failure) {
+        print(failure.errorMessage);
+        contentListReturn = null;
+      },
+      (contentList) {
+        print(contentList);
+        contentListReturn = contentList;
+      },
+    );
+    setIsLoading(false);
+    return contentListReturn;
+  }
+
+  Future<void> listRootContent() async {
+    setIsLoading(true);
+    final result = await _listAllContentUseCase.call(ListContentParam(
+      level: 1,
+      parentId: null,
+    ));
     result.fold(
       (failure) {
         print(failure.errorMessage);
@@ -184,7 +235,8 @@ class ContentProvider with ChangeNotifier {
       },
       (contentList) {
         setAllContentList(contentList);
-        setCurrentContentList(contentList.where((e) => e.parentId == null).toList());
+        setCurrentContentList(
+            contentList.where((e) => e.parentId == null).toList());
       },
     );
     setIsLoading(false);

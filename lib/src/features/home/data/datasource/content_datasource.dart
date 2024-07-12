@@ -73,82 +73,39 @@ class ContentDataSource {
   }
 
   // Method to list all content
-  Future<Either<Failure, List<ContentModel>>> listAllContent() async {
+  Future<Either<Failure, List<ContentModel>>> listAllContent(
+      int level, int? parentId) async {
     try {
       print(_client.auth.currentUser!.id);
-      final response = await _client.rpc<List<Map<String, dynamic>>>('get_nested_folders', params: {'p_user_id': _client.auth.currentUser!.id});
-       print('-----------------');
+      var response = await _client
+          .rpc<List<Map<String, dynamic>>>('get_nested_folders', params: {
+        'p_user_id': _client.auth.currentUser!.id,
+        'max_level': level
+      });
+      if (parentId != null) {
+        response = response
+            .where((element) => element['parent_id'] == parentId)
+            .toList();
+      }
+      print('-----------------');
       print(response.toString());
       print('-----------------');
-            List<ContentModel> allContentList = [];
-            for (var element in response) {
-              allContentList.add(  ContentModel(
-            id: element['id'],
-            name: element['name'],
-            parentId: element['parent_id'],
-            userId: _client.auth.currentUser!.id,
-            content: element['content'],
-            createdAt: DateTime.parse(element['created_at']),
-            updatedAt: DateTime.parse(element['updated_at']),
-            isFolder: element['is_folder'],
-            children: [],
-            level: element['level'],
-          ));
-            }
-
-      Map<int, List<Map<String, dynamic>>> mapByLevel = {};
-      response.forEach((element) {
-        // check if mapByLevel hase the level as key
-        // if not, create a new list
-        // if yes, add the element to the list
-        if(mapByLevel.containsKey(element['level'])){
-          mapByLevel[element['level']]!.add(element);
-        }else{
-          mapByLevel[element['level']] = [element];
-        }
-      });
-      print('*' * 100);
-      print(mapByLevel.toString());
-      print('*' * 100);
-
-      List<ContentModel> sortedContentList = [];
-
-      for (var level in mapByLevel.keys) {
-        List<Map<String, dynamic>> levelList = mapByLevel[level]!;
-        for (var element in levelList) {
-          print(element['name']);
-          ContentModel content = ContentModel(
-            id: element['id'],
-            name: element['name'],
-            parentId: element['parent_id'],
-            userId: _client.auth.currentUser!.id,
-            content: element['content'],
-            createdAt: DateTime.parse(element['created_at']),
-            updatedAt: DateTime.parse(element['updated_at']),
-            isFolder: element['is_folder'],
-            children: [],
-            level: element['level'],
-          );
-          if(content.parentId == null){
-            sortedContentList.add(content);
-          }else{
-            int parentIndex = sortedContentList.indexWhere((element) => element.id == content.parentId);
-            if(parentIndex != -1){
-              sortedContentList[parentIndex].children!.add(content);
-            }else{
-              sortedContentList.add(content);
-            }
-          }
-        }
+      List<ContentModel> allContentList = [];
+      for (var element in response) {
+        allContentList.add(ContentModel(
+          id: element['id'],
+          name: element['name'],
+          parentId: element['parent_id'],
+          userId: _client.auth.currentUser!.id,
+          content: element['content'],
+          createdAt: DateTime.parse(element['created_at']),
+          updatedAt: DateTime.parse(element['updated_at']),
+          isFolder: element['is_folder'],
+          children: [],
+          level: element['level'],
+        ));
       }
 
-      for (var content in sortedContentList) {
-        print(content.name);
-      }
-
-      // Create a map to hold the content by their ID
-
-      
       return Right(allContentList);
     } on PostgrestException catch (e) {
       print('error : $e');

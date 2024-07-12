@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:my_editor_app/core/data/exception/failure.dart';
+import 'package:my_editor_app/src/features/home/business/param/list_contant_param.dart';
 import 'package:my_editor_app/src/features/home/business/repository/content_repository.dart';
 import 'package:my_editor_app/src/features/home/data/datasource/content_datasource.dart';
 import 'package:my_editor_app/src/features/home/data/model/content_model.dart';
@@ -8,7 +9,8 @@ class ContentRepositoryImpl implements ContentRepository {
   final ContentDataSource _contentDataSource = ContentDataSource();
 
   @override
-  Future<Either<Failure, ContentModel>> createContent(ContentModel content) async {
+  Future<Either<Failure, ContentModel>> createContent(
+      ContentModel content) async {
     return await _contentDataSource.createContent(content);
   }
 
@@ -18,7 +20,8 @@ class ContentRepositoryImpl implements ContentRepository {
   }
 
   @override
-  Future<Either<Failure, ContentModel>> updateContent(ContentModel content) async {
+  Future<Either<Failure, ContentModel>> updateContent(
+      ContentModel content) async {
     return await _contentDataSource.updateContent(content);
   }
 
@@ -28,8 +31,8 @@ class ContentRepositoryImpl implements ContentRepository {
   }
 
   @override
-  Future<Either<Failure, List<ContentModel>>> listAllContent() async {
-    return await _contentDataSource.listAllContent();
+  Future<Either<Failure, List<ContentModel>>> listAllContent(
+      ListContentParam param) async {
+    return await _contentDataSource.listAllContent(param.level, param.parentId);
   }
 }
-
