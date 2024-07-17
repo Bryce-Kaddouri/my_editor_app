@@ -21,7 +21,7 @@ class _PageScreenState extends State<PageScreen> {
     super.initState();
     ContentModel contentModel = context
         .read<ContentProvider>()
-        .currentContentList
+        .currentContentList[0]
         .firstWhere((element) => element.id == widget.id);
     if (contentModel.content != null) {
       editorState = EditorState(document: 
@@ -44,7 +44,7 @@ class _PageScreenState extends State<PageScreen> {
 
               ContentModel contentModel = context
                   .read<ContentProvider>()
-                  .currentContentList
+                  .currentContentList[0]
                   .firstWhere((element) => element.id == widget.id);
               contentModel.content = editorState.document.toJson();
               print(contentModel.toJson());

@@ -101,7 +101,6 @@ class ContentDataSource {
           createdAt: DateTime.parse(element['created_at']),
           updatedAt: DateTime.parse(element['updated_at']),
           isFolder: element['is_folder'],
-          children: [],
           level: element['level'],
         ));
       }

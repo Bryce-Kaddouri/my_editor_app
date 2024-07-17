@@ -9,7 +9,6 @@ class ContentModel {
   final int? parentId;
   Map<String, dynamic>? content;
   final bool isFolder;
-  List<ContentModel>? children;
   final int level;
 
   ContentModel(
@@ -21,7 +20,6 @@ class ContentModel {
       required this.parentId,
       required this.content,
       required this.isFolder,
-      this.children,
       required this.level});
 
   factory ContentModel.fromJson(Map<String, dynamic> json) {
@@ -34,7 +32,6 @@ class ContentModel {
       parentId: json['parent_id'],
       content: null,
       isFolder: json['is_folder'],
-      children: [],
       level: json['level'],
     );
   }

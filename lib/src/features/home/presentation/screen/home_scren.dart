@@ -60,19 +60,22 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   //function to build tree view items by using recursive
-  List<TreeViewItem> _buildTreeViewItems(List<ContentModel> contentList) {
-    return _buildTreeViewItemsRecursive(contentList);
+  List<TreeViewItem> _buildTreeViewItems(
+      List<List<ContentModel>> contentLists) {
+    return _buildTreeViewItemsRecursive(contentLists, 0);
   }
 
   List<TreeViewItem> _buildTreeViewItemsRecursive(
-      List<ContentModel> contentList) {
+      List<List<ContentModel>> contentLists, int level) {
     print('_buildTreeViewItemsRecursive');
-    return contentList.map((content) {
+    if (level >= contentLists.length) return [];
+    return contentLists[level].map((content) {
       return TreeViewItem(
+        leading: Icon(content.isFolder ? FluentIcons.folder : FluentIcons.page),
         lazy: true,
         content: Text(content.name),
         value: content,
-        children: _buildTreeViewItemsRecursive(content.children ?? []),
+        children: _buildTreeViewItemsRecursive(contentLists, level + 1),
       );
     }).toList();
   }
@@ -125,31 +128,14 @@ class _HomeScreenState extends State<HomeScreen>
             print(children);
 
             if (children != null) {
-              context.read<ContentProvider>().addChildrenForParentId(children);
+              context
+                  .read<ContentProvider>()
+                  .addChildrenForParentId(children, path);
             }
 
             debugPrint('onItemInvoked: $item');
             print('reason: $reason');
             print(item.value);
-
-            /*if (item.children.isNotEmpty) return;
-            ContentModel contentModel = item.value;
-            int level = contentModel.level;
-            int id = contentModel.id!;
-            print(contentModel);
-            print(level);
-            print(id);
-            List<ContentModel>? children = await context
-                .read<ContentProvider>()
-                .listAllContentForSpecificFolder(level + 1, id);
-
-            print(children);
-
-            if (children != null) {
-              context.read<ContentProvider>().addChildrenForParentId(children);
-            }*/
-
-            // If it's already populated, return.
           },
           onSelectionChanged: (selectedItems) async => debugPrint(
             'onSelectionChanged: ${selectedItems.map((i) => i.value)}',
@@ -267,12 +253,12 @@ class _HomeScreenState extends State<HomeScreen>
                     if (context.read<ContentProvider>().currentIndex != -1 &&
                         context
                             .read<ContentProvider>()
-                            .currentContentList[
-                                context.read<ContentProvider>().currentIndex]
+                            .currentContentList[0]
+                                [context.read<ContentProvider>().currentIndex]
                             .isFolder) {
                       current =
-                          context.read<ContentProvider>().currentContentList[
-                              context.read<ContentProvider>().currentIndex];
+                          context.read<ContentProvider>().currentContentList[0]
+                              [context.read<ContentProvider>().currentIndex];
                     }
                     int? parentId;
                     if (current != null) {

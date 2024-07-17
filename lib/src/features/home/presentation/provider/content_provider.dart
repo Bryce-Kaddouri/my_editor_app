@@ -36,9 +36,9 @@ class ContentProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  List<ContentModel> _currentContentList = [];
-  List<ContentModel> get currentContentList => _currentContentList;
-  void setCurrentContentList(List<ContentModel> currentContentList) {
+  List<List<ContentModel>> _currentContentList = [];
+  List<List<ContentModel>> get currentContentList => _currentContentList;
+  void setCurrentContentList(List<List<ContentModel>> currentContentList) {
     _currentContentList = currentContentList;
     notifyListeners();
   }
@@ -52,25 +52,17 @@ class ContentProvider with ChangeNotifier {
 
   void addChildrenForParentId(List<ContentModel> children, String path) {
     print('method : addChildrenForParentId');
+    print(path);
 
+    int level = path.split('-').length;
+    if (_currentContentList.length <= level) {
+      _currentContentList.add(children);
+    } else {
+      _currentContentList[level] = children;
+    }
+    print(level);
     List<int> pathsId = [];
     List<String> pathList = path.split('-');
-    pathList.forEach((element) {
-      pathsId.add(int.parse(element));
-    });
-    ContentModel? current;
-    for (int i = 0; i < pathsId.length; i++) {
-      ContentModel content =
-          _currentContentList.firstWhere((element) => element.id == pathsId[i]);
-      if (current == null) {
-        current = content;
-      } else {
-        current =
-            current.children!.firstWhere((element) => element.id == pathsId[i]);
-        _currentContentList = current.children!;
-      }
-    }
-
     notifyListeners();
   }
 
@@ -234,9 +226,9 @@ class ContentProvider with ChangeNotifier {
         // Handle failure
       },
       (contentList) {
-        setAllContentList(contentList);
-        setCurrentContentList(
-            contentList.where((e) => e.parentId == null).toList());
+        setCurrentContentList([
+          contentList,
+        ]);
       },
     );
     setIsLoading(false);
